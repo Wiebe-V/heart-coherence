@@ -20,6 +20,17 @@ describe("resampleIBI", () => {
     const beats = Array.from({ length: 100 }, (_, i) => beat(i * 800, 800));
     expect(resampleIBI(beats, 0, FS, N).length).toBe(N);
   });
+  it("single beat: all samples clamp to that IBI (no undefined access)", () => {
+    const out = resampleIBI([beat(500, 800)], 0, FS, N);
+    expect(out.length).toBe(N);
+    expect(out[0]).toBe(800);
+    expect(out[N - 1]).toBe(800);
+  });
+  it("no beats: returns N zeros", () => {
+    const out = resampleIBI([], 0, FS, N);
+    expect(out.length).toBe(N);
+    expect(out[0]).toBe(0);
+  });
   it("linearly interpolates between bracketing beats", () => {
     const beats = [beat(0, 800), beat(1000, 1000)];
     const out = resampleIBI(beats, 0, FS, N);

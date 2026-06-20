@@ -16,6 +16,11 @@ function sineBeats(freqHz: number, durationS: number, meanIbi = 850, amp = 60): 
 const NOW = (WINDOW_S + 5) * 1000;
 
 describe("computeCoherence", () => {
+  it("zero or one beat -> not ready, progress 0", () => {
+    expect(computeCoherence([], 0, null).ready).toBe(false);
+    const one = sineBeats(0.1, 1)[0]!;
+    expect(computeCoherence([one], 0, null).progress).toBe(0);
+  });
   it("reports progress (not ready) before the window fills", () => {
     const beats = sineBeats(0.1, 20);
     const r = computeCoherence(beats, 20_000, null);

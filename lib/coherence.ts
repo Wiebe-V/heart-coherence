@@ -14,6 +14,12 @@ function emptyResult(progress: number): CoherenceResult {
   return { ready: false, progress, score: 0, raw: 0, peakFreqHz: 0, zone: "scattered" };
 }
 
+/**
+ * HeartMath-style spectral coherence over the most recent WINDOW_S of beats.
+ * `beats` must carry at least the full window of history (the caller's ring
+ * buffer keeps BEAT_BUFFER_S > WINDOW_S); otherwise `progress` saturates to 1
+ * before enough signal exists. `now` is on the same timeline as `beat.t`.
+ */
 export function computeCoherence(
   beats: Beat[],
   now: number,
@@ -54,11 +60,16 @@ export function computeCoherence(
     if (f < PEAK_BAND.lo || f > PEAK_BAND.hi) continue;
     if (power[k]! > peakVal) { peakVal = power[k]!; peakK = k; }
   }
+  // Unreachable with FS=4/N=256 (PEAK_BAND always contains bins), but guards
+  // against a degenerate band config rather than indexing power[-1].
   if (peakK < 0) {
     return { ready: true, progress: 1, score: prevScore ?? 0, raw: 0, peakFreqHz: 0, zone: "scattered" };
   }
   const peakF = freq(peakK);
 
+  // PEAK_HALF_WIDTH_HZ (0.015) < BIN_HZ (0.015625), so this captures exactly the
+  // peak bin at the current FS/N. Raising N would widen the capture — by design,
+  // it's a frequency window, not a fixed bin count.
   let peakPower = 0;
   for (let k = 0; k <= half; k++) {
     if (Math.abs(freq(k) - peakF) <= PEAK_HALF_WIDTH_HZ) peakPower += power[k]!;
