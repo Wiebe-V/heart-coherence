@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeCoherence } from "@/lib/coherence";
-import { WINDOW_S, FS, N } from "@/lib/constants";
+import { WINDOW_S, FS, N, SPECTRUM_BAND } from "@/lib/constants";
 import type { Beat } from "@/types";
 
 function sineBeats(freqHz: number, durationS: number, meanIbi = 850, amp = 60): Beat[] {
@@ -68,5 +68,34 @@ describe("computeCoherence", () => {
     const beats = sineBeats(0.1, WINDOW_S + 10);
     const r = computeCoherence(beats, NOW, 0);
     expect(r.score).toBeCloseTo(0.2 * r.raw, 6);
+  });
+});
+
+const BIN_HZ = FS / N; // 0.015625
+
+describe("computeCoherence spectrum", () => {
+  it("returns empty spectrum when not ready", () => {
+    const r = computeCoherence([], 0, null);
+    expect(r.spectrum).toEqual([]);
+  });
+
+  it("returns non-empty spectrum within SPECTRUM_BAND when ready", () => {
+    const beats = sineBeats(0.1, WINDOW_S + 10);
+    const r = computeCoherence(beats, NOW, null);
+    expect(r.ready).toBe(true);
+    expect(r.spectrum.length).toBeGreaterThan(0);
+    for (const bin of r.spectrum) {
+      expect(bin.freqHz).toBeGreaterThanOrEqual(SPECTRUM_BAND.lo - 0.001);
+      expect(bin.freqHz).toBeLessThanOrEqual(SPECTRUM_BAND.hi + 0.001);
+      expect(bin.power).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("max-power bin in spectrum is at peakFreqHz (within one bin)", () => {
+    const beats = sineBeats(0.1, WINDOW_S + 10);
+    const r = computeCoherence(beats, NOW, null);
+    expect(r.ready).toBe(true);
+    const maxBin = r.spectrum.reduce((a, b) => (a.power > b.power ? a : b));
+    expect(Math.abs(maxBin.freqHz - r.peakFreqHz)).toBeLessThanOrEqual(BIN_HZ + 0.001);
   });
 });

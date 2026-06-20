@@ -2,16 +2,16 @@ import { fft } from "@/lib/fft";
 import { resampleIBI } from "@/lib/resample";
 import { zoneFor } from "@/lib/zones";
 import {
-  FS, N, WINDOW_S, PEAK_BAND, TOTAL_BAND, PEAK_HALF_WIDTH_HZ, EMA_ALPHA,
-  DEFAULT_ZONE_THRESHOLDS,
+  FS, N, WINDOW_S, PEAK_BAND, TOTAL_BAND, SPECTRUM_BAND,
+  PEAK_HALF_WIDTH_HZ, EMA_ALPHA, DEFAULT_ZONE_THRESHOLDS,
 } from "@/lib/constants";
-import type { Beat, CoherenceResult, ZoneThresholds } from "@/types";
+import type { Beat, CoherenceResult, SpectrumBin, ZoneThresholds } from "@/types";
 
 const WINDOW_MS = WINDOW_S * 1000;
 const BIN_HZ = FS / N;
 
 function emptyResult(progress: number): CoherenceResult {
-  return { ready: false, progress, score: 0, raw: 0, peakFreqHz: 0, zone: "scattered" };
+  return { ready: false, progress, score: 0, raw: 0, peakFreqHz: 0, zone: "scattered", spectrum: [] };
 }
 
 /**
@@ -60,16 +60,11 @@ export function computeCoherence(
     if (f < PEAK_BAND.lo || f > PEAK_BAND.hi) continue;
     if (power[k]! > peakVal) { peakVal = power[k]!; peakK = k; }
   }
-  // Unreachable with FS=4/N=256 (PEAK_BAND always contains bins), but guards
-  // against a degenerate band config rather than indexing power[-1].
   if (peakK < 0) {
-    return { ready: true, progress: 1, score: prevScore ?? 0, raw: 0, peakFreqHz: 0, zone: "scattered" };
+    return { ready: true, progress: 1, score: prevScore ?? 0, raw: 0, peakFreqHz: 0, zone: "scattered", spectrum: [] };
   }
   const peakF = freq(peakK);
 
-  // PEAK_HALF_WIDTH_HZ (0.015) < BIN_HZ (0.015625), so this captures exactly the
-  // peak bin at the current FS/N. Raising N would widen the capture — by design,
-  // it's a frequency window, not a fixed bin count.
   let peakPower = 0;
   for (let k = 0; k <= half; k++) {
     if (Math.abs(freq(k) - peakF) <= PEAK_HALF_WIDTH_HZ) peakPower += power[k]!;
@@ -81,8 +76,17 @@ export function computeCoherence(
     if (f >= TOTAL_BAND.lo && f <= TOTAL_BAND.hi) totalPower += power[k]!;
   }
 
+  // Collect bins within the display band for the spectrum chart
+  const spectrum: SpectrumBin[] = [];
+  for (let k = 0; k <= half; k++) {
+    const f = freq(k);
+    if (f >= SPECTRUM_BAND.lo && f <= SPECTRUM_BAND.hi) {
+      spectrum.push({ freqHz: f, power: power[k]! });
+    }
+  }
+
   const raw = totalPower > 0 ? (peakPower / totalPower) * 100 : 0;
   const score = prevScore === null ? raw : (1 - EMA_ALPHA) * prevScore + EMA_ALPHA * raw;
 
-  return { ready: true, progress: 1, score, raw, peakFreqHz: peakF, zone: zoneFor(score, thresholds) };
+  return { ready: true, progress: 1, score, raw, peakFreqHz: peakF, zone: zoneFor(score, thresholds), spectrum };
 }
