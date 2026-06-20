@@ -94,6 +94,9 @@ export interface SessionRecord {
   achievement: number;
 }
 
+/** null = follow system prefers-color-scheme */
+export type ThemePref = "light" | "dark" | null;
+
 export interface Settings {
   /** breaths/min */
   pace: number;
@@ -103,4 +106,6 @@ export interface Settings {
   reducedMotionOverride: boolean | null;
   /** zone-weighted points that complete a session */
   achievementGoal: number;
+  /** null = follow system prefers-color-scheme */
+  theme: ThemePref;
 }

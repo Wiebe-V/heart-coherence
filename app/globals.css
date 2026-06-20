@@ -36,6 +36,86 @@
   --zone: var(--zone-scattered);
 }
 
+/* ------------------------------------------------------------------ *
+ * Light theme — soft warm paper
+ * Not an inversion of the dark theme: the orb's glow was built for a
+ * dark canvas, so here it becomes a saturated disc resting on warm
+ * paper with a soft colored shadow. Zone colors deepen to stay legible
+ * on the light field. Applied by the boot script / settings drawer
+ * setting data-theme="light" on <html>.
+ * ------------------------------------------------------------------ */
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #f3efe7; /* warm off-white paper */
+  --bg-elevated: #fbf8f1; /* faint lift for quiet panels */
+
+  /* Text — soft warm ink, never pure black */
+  --fg: #2b2924;
+  --fg-muted: #6c665b;
+  --fg-faint: #a59e8e;
+
+  /* Hairlines — dark, low alpha */
+  --line: rgba(43, 41, 36, 0.1);
+  --line-strong: rgba(43, 41, 36, 0.16);
+
+  /* Focus — deeper blue for contrast on paper */
+  --focus: #4a6db0;
+
+  /* Zone colors deepened so bands/lines read against light */
+  --zone-scattered: #5a6aa0;
+  --zone-building: #2f9d96;
+  --zone-coherent: #3da568;
+}
+
+[data-theme="light"] .app-atmosphere {
+  background:
+    radial-gradient(
+      60% 55% at 50% 42%,
+      color-mix(in oklab, var(--zone) 12%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(120% 120% at 50% 50%, #fffdf8 0%, var(--bg) 60%);
+}
+
+[data-theme="light"] .orb {
+  background: radial-gradient(
+    circle at 50% 42%,
+    color-mix(in oklab, var(--zone) 88%, #ffffff 14%) 0%,
+    color-mix(in oklab, var(--zone) 82%, transparent) 46%,
+    color-mix(in oklab, var(--zone) 58%, transparent) 72%,
+    color-mix(in oklab, var(--zone) 26%, transparent) 86%,
+    transparent 92%
+  );
+  box-shadow:
+    0 12px 48px -8px color-mix(in oklab, var(--zone) 45%, transparent),
+    0 4px 16px -4px color-mix(in oklab, var(--zone) 35%, transparent),
+    inset 0 0 50px -10px color-mix(in oklab, #ffffff 55%, transparent);
+}
+
+[data-theme="light"] .orb::before {
+  background: radial-gradient(
+    circle at 50% 38%,
+    color-mix(in oklab, #ffffff 55%, var(--zone) 10%) 0%,
+    transparent 60%
+  );
+  opacity: 0.5;
+}
+
+[data-theme="light"] .orb-ring {
+  border-color: color-mix(in oklab, var(--zone) 80%, transparent);
+  box-shadow:
+    0 8px 32px -8px color-mix(in oklab, var(--zone) 35%, transparent),
+    inset 0 0 30px -8px color-mix(in oklab, var(--zone) 18%, transparent);
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in oklab, var(--zone) 14%, transparent) 0%,
+    transparent 70%
+  );
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-fg: var(--fg);

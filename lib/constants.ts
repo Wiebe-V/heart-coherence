@@ -42,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   resonanceIntervalS: RESONANCE_INTERVAL_S,
   reducedMotionOverride: null,
   achievementGoal: DEFAULT_ACHIEVEMENT_GOAL,
+  theme: null,
 };
 
 export const SETTINGS_KEY = "coherence.settings.v1";

@@ -1,4 +1,4 @@
-import type { Settings } from "@/types";
+import type { Settings, ThemePref } from "@/types";
 import { DEFAULT_SETTINGS, PACE, SETTINGS_KEY, DEFAULT_ZONE_THRESHOLDS } from "@/lib/constants";
 
 /**
@@ -56,7 +56,14 @@ export function mergeSettings(partial: Partial<Settings>): Settings {
     achievementGoal = partial.achievementGoal;
   }
 
-  return { pace, zoneThresholds, resonanceIntervalS, reducedMotionOverride, achievementGoal };
+  // theme: only "light" | "dark" | null are valid
+  let theme: ThemePref = DEFAULT_SETTINGS.theme;
+  const th = partial.theme;
+  if (th === "light" || th === "dark" || th === null) {
+    theme = th;
+  }
+
+  return { pace, zoneThresholds, resonanceIntervalS, reducedMotionOverride, achievementGoal, theme };
 }
 
 /**

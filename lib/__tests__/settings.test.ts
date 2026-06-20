@@ -88,6 +88,23 @@ describe("mergeSettings", () => {
     expect(s.reducedMotionOverride).toBeNull();
   });
 
+  it("theme: 'light' is preserved", () => {
+    expect(mergeSettings({ theme: "light" }).theme).toBe("light");
+  });
+
+  it("theme: 'dark' is preserved", () => {
+    expect(mergeSettings({ theme: "dark" }).theme).toBe("dark");
+  });
+
+  it("theme: null is preserved", () => {
+    expect(mergeSettings({ theme: null }).theme).toBeNull();
+  });
+
+  it("theme: junk value falls back to null", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(mergeSettings({ theme: "blue" as any }).theme).toBeNull();
+  });
+
   it("valid pace within range is preserved exactly", () => {
     const s = mergeSettings({ pace: 5.5 });
     expect(s.pace).toBe(5.5);

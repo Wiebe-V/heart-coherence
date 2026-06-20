@@ -5,6 +5,7 @@ import type { CoherenceZone, ZoneThresholds } from "@/types";
 import { getSamples } from "@/lib/coherenceBuffer";
 import { useTrainerStore } from "@/lib/store";
 import { panelMode } from "@/lib/panelState";
+import { THEME_CHANGE_EVENT } from "@/lib/theme";
 import { DEFAULT_ZONE_THRESHOLDS, COHERENCE_HISTORY_S } from "@/lib/constants";
 import MetricPanel from "@/components/MetricPanel";
 import PanelState from "@/components/PanelState";
@@ -46,13 +47,25 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
     const ro = new ResizeObserver(fit);
     ro.observe(canvas);
 
+    // Colors come from CSS variables so they follow the theme. getComputedStyle
+    // returns a live object; re-read on theme change so a live switch updates.
     const rootStyle = getComputedStyle(document.documentElement);
-    const scatteredColor = rootStyle.getPropertyValue("--zone-scattered").trim() || "#6b7ba8";
-    const buildingColor = rootStyle.getPropertyValue("--zone-building").trim() || "#4ec5c1";
-    const coherentColor = rootStyle.getPropertyValue("--zone-coherent").trim() || "#6fcf8e";
-
+    let scatteredColor = "";
+    let buildingColor = "";
+    let coherentColor = "";
+    let lineColor = "";
     let cachedZone = "";
     let zoneColor = "#6b7ba8";
+    const readColors = (): void => {
+      scatteredColor = rootStyle.getPropertyValue("--zone-scattered").trim() || "#6b7ba8";
+      buildingColor = rootStyle.getPropertyValue("--zone-building").trim() || "#4ec5c1";
+      coherentColor = rootStyle.getPropertyValue("--zone-coherent").trim() || "#6fcf8e";
+      lineColor = rootStyle.getPropertyValue("--line").trim() || "rgba(255,255,255,0.06)";
+      cachedZone = ""; // force zoneColor to re-read on the next frame
+    };
+    readColors();
+    window.addEventListener(THEME_CHANGE_EVENT, readColors);
+
     let rafId = 0;
 
     const draw = (): void => {
@@ -73,7 +86,7 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
       if (samples.length < 2) {
         // Bare baseline; the <PanelState> overlay owns "connect"/"warming up"
         // messaging while the first window fills.
-        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, yOf(0));
@@ -163,6 +176,7 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
     return () => {
       window.cancelAnimationFrame(rafId);
       ro.disconnect();
+      window.removeEventListener(THEME_CHANGE_EVENT, readColors);
     };
   }, [building, coherent]);
 

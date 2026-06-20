@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getBeats, nowOnTimeline } from "@/lib/beatBuffer";
 import { useTrainerStore } from "@/lib/store";
+import { THEME_CHANGE_EVENT } from "@/lib/theme";
 import MetricPanel from "@/components/MetricPanel";
 import PanelState from "@/components/PanelState";
 
@@ -42,10 +43,19 @@ export default function LiveWaveform() {
     const ro = new ResizeObserver(fit);
     ro.observe(canvas);
 
+    // Colors come from CSS variables so they follow the theme. getComputedStyle
+    // returns a live object; re-read on theme change so a live switch updates.
     const styles = getComputedStyle(document.documentElement);
-    const accent = styles.getPropertyValue("--fg-muted").trim() || "#8b93a3";
-    const faint = styles.getPropertyValue("--fg-faint").trim() || "#4d5667";
-    const line = "rgba(255,255,255,0.06)";
+    let accent = "";
+    let faint = "";
+    let line = "";
+    const readColors = (): void => {
+      accent = styles.getPropertyValue("--fg-muted").trim() || "#8b93a3";
+      faint = styles.getPropertyValue("--fg-faint").trim() || "#4d5667";
+      line = styles.getPropertyValue("--line").trim() || "rgba(255,255,255,0.06)";
+    };
+    readColors();
+    window.addEventListener(THEME_CHANGE_EVENT, readColors);
 
     let rafId = 0;
 
@@ -156,6 +166,7 @@ export default function LiveWaveform() {
     return () => {
       window.cancelAnimationFrame(rafId);
       ro.disconnect();
+      window.removeEventListener(THEME_CHANGE_EVENT, readColors);
     };
   }, []);
 

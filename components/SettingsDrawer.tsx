@@ -37,6 +37,7 @@ export default function SettingsDrawer({ open, onClose, reduced }: SettingsDrawe
   const { building, coherent } = settings.zoneThresholds;
   const rmo = settings.reducedMotionOverride;
   const rmoValue = rmo === null ? "auto" : rmo ? "on" : "off";
+  const themeValue = settings.theme ?? "auto";
 
   return (
     <>
@@ -132,6 +133,21 @@ export default function SettingsDrawer({ open, onClose, reduced }: SettingsDrawe
             <option value="auto">auto (system)</option>
             <option value="on">on</option>
             <option value="off">off</option>
+          </select>
+        </Field>
+
+        <Field label="theme">
+          <select
+            className={inputClass}
+            value={themeValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              update({ theme: v === "auto" ? null : (v as "light" | "dark") });
+            }}
+          >
+            <option value="auto">auto (system)</option>
+            <option value="light">light</option>
+            <option value="dark">dark</option>
           </select>
         </Field>
       </div>
