@@ -296,7 +296,8 @@ input:focus-visible {
   .app-atmosphere,
   .orb,
   .orb::before,
-  .orb-ring {
+  .orb-ring,
+  .motion-zone {
     transition-duration: 0ms;
   }
 }

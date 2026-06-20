@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Settings } from "@/types";
 import { useTrainerStore } from "@/lib/store";
@@ -14,6 +14,7 @@ import CoherenceGauge from "@/components/CoherenceGauge";
 import ZoneBar from "@/components/ZoneBar";
 import LiveWaveform from "@/components/LiveWaveform";
 import SessionControls from "@/components/SessionControls";
+import ResonanceFinder from "@/components/ResonanceFinder";
 
 /**
  * Client root. Composes the single-screen trainer: connection at the top, the
@@ -36,6 +37,11 @@ export default function Trainer() {
   const pace = useTrainerStore((s) => s.pace);
   const setPace = useTrainerStore((s) => s.setPace);
   const zone = useTrainerStore((s) => s.coherence.zone);
+
+  // The resonance finder is a quiet, opt-in panel so the default screen stays
+  // a single calm breath cycle. It drives the orb's pace while open.
+  const [resonanceOpen, setResonanceOpen] = useState(false);
+  const resonanceId = useId();
 
   // Push the persisted pace into the store once on mount.
   useEffect(() => {
@@ -65,6 +71,24 @@ export default function Trainer() {
           <ZoneBar thresholds={settings.zoneThresholds} />
           <LiveWaveform />
           <SessionControls />
+
+          <div className="flex w-full max-w-md flex-col items-center gap-4">
+            <button
+              type="button"
+              className="text-xs uppercase tracking-[0.18em] text-fg-faint underline-offset-4 transition-colors hover:text-fg-muted focus-visible:text-fg-muted"
+              aria-expanded={resonanceOpen}
+              aria-controls={resonanceId}
+              onClick={() => setResonanceOpen((open) => !open)}
+            >
+              {resonanceOpen ? "hide resonance finder" : "find my resonance"}
+            </button>
+            {resonanceOpen ? (
+              <div id={resonanceId} className="flex w-full justify-center">
+                <ResonanceFinder />
+              </div>
+            ) : null}
+          </div>
+
           <Link
             href="/history"
             className="text-xs text-fg-faint underline-offset-4 transition-colors hover:text-fg-muted focus-visible:text-fg-muted"
