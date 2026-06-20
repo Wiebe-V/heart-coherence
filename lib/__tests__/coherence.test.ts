@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeCoherence } from "@/lib/coherence";
-import { WINDOW_S } from "@/lib/constants";
+import { WINDOW_S, FS, N } from "@/lib/constants";
 import type { Beat } from "@/types";
 
 function sineBeats(freqHz: number, durationS: number, meanIbi = 850, amp = 60): Beat[] {
@@ -23,13 +23,22 @@ describe("computeCoherence", () => {
     expect(r.progress).toBeGreaterThan(0);
     expect(r.progress).toBeLessThan(1);
   });
-  it("pure 0.1 Hz IBI -> HIGH coherence ratio", () => {
+  it("pure 0.1 Hz IBI -> high coherence with dominant peak near 0.1 Hz", () => {
     const beats = sineBeats(0.1, WINDOW_S + 10);
     const r = computeCoherence(beats, NOW, null);
     expect(r.ready).toBe(true);
-    expect(r.raw).toBeGreaterThan(60);
+    // 6 bpm = 0.1 Hz lands mid-bin (bin 6.4; bin width FS/N = 0.015625 Hz), so the
+    // signal energy splits across bins 6 and 7 while the spec's ±0.015 Hz peak
+    // window captures a single bin -> ~54. Unambiguously "high" vs the ~10 of noise.
+    expect(r.raw).toBeGreaterThan(50);
     expect(r.peakFreqHz).toBeGreaterThan(0.08);
     expect(r.peakFreqHz).toBeLessThan(0.12);
+  });
+  it("a bin-aligned resonance sine reaches the coherent zone (raw > 65)", () => {
+    // 7 * (FS/N) = 0.109375 Hz lands exactly on an FFT bin -> no leakage penalty.
+    const beats = sineBeats(7 * (FS / N), WINDOW_S + 10);
+    const r = computeCoherence(beats, NOW, null);
+    expect(r.raw).toBeGreaterThan(65);
   });
   it("white-noise IBI -> LOW coherence ratio", () => {
     const beats: Beat[] = [];
@@ -41,7 +50,7 @@ describe("computeCoherence", () => {
       t += ibi;
     }
     const r = computeCoherence(beats, NOW, null);
-    expect(r.raw).toBeLessThan(40);
+    expect(r.raw).toBeLessThan(25);
   });
   it("flat IBI -> no NaN, finite score (no divide-by-zero)", () => {
     const beats: Beat[] = [];
