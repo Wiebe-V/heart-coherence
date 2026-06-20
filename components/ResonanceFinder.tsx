@@ -69,10 +69,18 @@ export default function ResonanceFinder() {
     const pace = paces[indexRef.current];
     if (pace === undefined) return;
 
+    const { coherence, connection } = useTrainerStore.getState();
+    // If the signal drops mid-sweep, stop cleanly rather than running a blind
+    // sweep (the !connected render branch alone wouldn't halt the interval).
+    if (connection.status !== "connected") {
+      clearTimer();
+      setPhase("idle");
+      return;
+    }
+
     elapsedRef.current += 1;
 
     // Only accumulate once breathing has settled and a full window is ready.
-    const { coherence } = useTrainerStore.getState();
     if (elapsedRef.current > RESONANCE_SETTLE_S && coherence.ready) {
       sumRef.current += coherence.score;
       countRef.current += 1;
