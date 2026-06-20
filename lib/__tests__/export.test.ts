@@ -11,6 +11,7 @@ const baseSession: SessionRecord = {
   peakCoherence: 85.1,
   coherenceTrace: [70.1, 72.5, 74.0, 75.3, 76.2],
   hrTrace: [62, 63, 64],
+  achievement: 18,
 };
 
 describe("sessionToJSON", () => {

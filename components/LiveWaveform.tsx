@@ -2,13 +2,22 @@
 
 import { useEffect, useRef } from "react";
 import { getBeats, nowOnTimeline } from "@/lib/beatBuffer";
+import { useTrainerStore } from "@/lib/store";
 import MetricPanel from "@/components/MetricPanel";
+import PanelState from "@/components/PanelState";
 
 const WINDOW_MS = 30_000;
 const PADDING = 6;
 
 export default function LiveWaveform() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const connected = useTrainerStore((s) => s.connection.status === "connected");
+  // Held in a ref so the draw loop sees the latest value without re-running the
+  // canvas setup effect on every connect/disconnect.
+  const connectedRef = useRef(connected);
+  useEffect(() => {
+    connectedRef.current = connected;
+  }, [connected]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -58,11 +67,15 @@ export default function LiveWaveform() {
         ctx.lineTo(cssW, midY);
         ctx.stroke();
 
-        ctx.fillStyle = faint;
-        ctx.font = "11px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("waiting for beats", cssW / 2, midY - 12);
+        // When disconnected the <PanelState> overlay owns the messaging, so the
+        // canvas stays a bare baseline to avoid overlapping text.
+        if (connectedRef.current) {
+          ctx.fillStyle = faint;
+          ctx.font = "11px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("waiting for beats", cssW / 2, midY - 12);
+        }
 
         rafId = window.requestAnimationFrame(draw);
         return;
@@ -148,8 +161,13 @@ export default function LiveWaveform() {
 
   return (
     <MetricPanel title="heart rhythm">
-      <div role="img" aria-label="live heart-rate waveform" className="h-20">
+      <div role="img" aria-label="live heart-rate waveform" className="relative h-20">
         <canvas ref={canvasRef} className="h-full w-full" />
+        {!connected ? (
+          <div className="absolute inset-0">
+            <PanelState mode="connect" />
+          </div>
+        ) : null}
         <span className="visually-hidden">
           A scrolling line showing your instantaneous heart rate over the last thirty seconds.
         </span>

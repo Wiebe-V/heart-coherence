@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ZoneThresholds } from "@/types";
+import type { CoherenceZone, ZoneThresholds } from "@/types";
 import { getSamples } from "@/lib/coherenceBuffer";
 import { useTrainerStore } from "@/lib/store";
+import { panelMode } from "@/lib/panelState";
 import { DEFAULT_ZONE_THRESHOLDS, COHERENCE_HISTORY_S } from "@/lib/constants";
 import MetricPanel from "@/components/MetricPanel";
+import PanelState from "@/components/PanelState";
 
 const PADDING = 8;
 
@@ -17,7 +19,9 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Subscribe for the panel value label (1 Hz re-render is fine here)
   const coherence = useTrainerStore((s) => s.coherence);
+  const status = useTrainerStore((s) => s.connection.status);
   const { building, coherent } = thresholds;
+  const mode = panelMode(status, coherence.ready);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -43,7 +47,7 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
     ro.observe(canvas);
 
     const rootStyle = getComputedStyle(document.documentElement);
-    const faintColor = rootStyle.getPropertyValue("--fg-faint").trim() || "#4d5667";
+    const scatteredColor = rootStyle.getPropertyValue("--zone-scattered").trim() || "#6b7ba8";
     const buildingColor = rootStyle.getPropertyValue("--zone-building").trim() || "#4ec5c1";
     const coherentColor = rootStyle.getPropertyValue("--zone-coherent").trim() || "#6fcf8e";
 
@@ -64,35 +68,17 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
           rootStyle.getPropertyValue(`--zone-${currentZone}`).trim() || "#6b7ba8";
       }
 
-      // Faint threshold guide lines
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = buildingColor + "28";
-      ctx.beginPath();
-      ctx.moveTo(0, yOf(building));
-      ctx.lineTo(cssW, yOf(building));
-      ctx.stroke();
-
-      ctx.strokeStyle = coherentColor + "28";
-      ctx.beginPath();
-      ctx.moveTo(0, yOf(coherent));
-      ctx.lineTo(cssW, yOf(coherent));
-      ctx.stroke();
-
       const samples = getSamples();
 
       if (samples.length < 2) {
+        // Bare baseline; the <PanelState> overlay owns "connect"/"warming up"
+        // messaging while the first window fills.
         ctx.strokeStyle = "rgba(255,255,255,0.06)";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, yOf(0));
         ctx.lineTo(cssW, yOf(0));
         ctx.stroke();
-
-        ctx.fillStyle = faintColor;
-        ctx.font = "11px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("collecting…", cssW / 2, cssH / 2);
         rafId = window.requestAnimationFrame(draw);
         return;
       }
@@ -106,6 +92,33 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
         rafId = window.requestAnimationFrame(draw);
         return;
       }
+
+      // Zone bands — three calm swim lanes so the trace's zone reads at a
+      // glance. The current zone brightens; the others stay a faint wash,
+      // echoing the ZoneBar's "you are here" language. Drawn only alongside a
+      // live trace — never behind the empty "connect" state.
+      const bandAlpha = (z: CoherenceZone): string => (currentZone === z ? "52" : "2b");
+      const band = (yTop: number, yBot: number, color: string, z: CoherenceZone): void => {
+        ctx.fillStyle = color + bandAlpha(z);
+        ctx.fillRect(0, yTop, cssW, yBot - yTop);
+      };
+      band(0, yOf(coherent), coherentColor, "coherent");
+      band(yOf(coherent), yOf(building), buildingColor, "building");
+      band(yOf(building), cssH, scatteredColor, "scattered");
+
+      // Threshold seams — where one zone hands off to the next.
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = buildingColor + "5c";
+      ctx.beginPath();
+      ctx.moveTo(0, yOf(building));
+      ctx.lineTo(cssW, yOf(building));
+      ctx.stroke();
+
+      ctx.strokeStyle = coherentColor + "5c";
+      ctx.beginPath();
+      ctx.moveTo(0, yOf(coherent));
+      ctx.lineTo(cssW, yOf(coherent));
+      ctx.stroke();
 
       const xOf = (t: number) => ((t - t0) / windowMs) * cssW;
 
@@ -160,8 +173,13 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
       title="coherence over time"
       value={scoreLabel !== null ? <span className="tnum text-sm text-zone">{scoreLabel}</span> : undefined}
     >
-      <div role="img" aria-label="coherence score over time" className="h-24">
+      <div role="img" aria-label="coherence score over time" className="relative h-24">
         <canvas ref={canvasRef} className="h-full w-full" />
+        {mode !== "live" ? (
+          <div className="absolute inset-0">
+            <PanelState mode={mode} progress={coherence.progress} />
+          </div>
+        ) : null}
         <span className="visually-hidden">
           Line graph of coherence score over the last three minutes. Y-axis: 0 to 100.
         </span>

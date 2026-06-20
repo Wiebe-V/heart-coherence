@@ -1,88 +1,150 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useTrainerStore } from "@/lib/store";
+import { panelMode } from "@/lib/panelState";
 import { FS, N, SPECTRUM_BAND } from "@/lib/constants";
+import PanelState from "@/components/PanelState";
 
 const BIN_HZ = FS / N; // 0.015625 Hz
-const CHART_H = 48;
-const LABEL_H = 8;
-const TOTAL_H = CHART_H + LABEL_H;
+const TOP_PAD = 4; // px so the tallest bar doesn't touch the top edge
+const BAND_HALF_BPM = 0.75; // target band half-width, in breaths/min
+const AXIS_BPM = [6, 12, 18]; // x-axis ticks — same positions as 0.1/0.2/0.3 Hz
 
+/** Percentage (0–100) of the chart width for a given frequency. */
 function freqToX(freqHz: number): number {
   return ((freqHz - SPECTRUM_BAND.lo) / (SPECTRUM_BAND.hi - SPECTRUM_BAND.lo)) * 100;
 }
 
 export default function SpectrumChart() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const spectrum = useTrainerStore((s) => s.coherence.spectrum);
   const peakFreqHz = useTrainerStore((s) => s.coherence.peakFreqHz);
   const ready = useTrainerStore((s) => s.coherence.ready);
+  const zone = useTrainerStore((s) => s.coherence.zone);
+  const pace = useTrainerStore((s) => s.pace);
+  const status = useTrainerStore((s) => s.connection.status);
+  const progress = useTrainerStore((s) => s.coherence.progress);
 
-  const maxPower = spectrum.length > 0 ? Math.max(...spectrum.map((b) => b.power)) : 1;
-  const barSpacing = spectrum.length > 0 ? 95 / spectrum.length : 4;
-  const barW = barSpacing * 0.75;
+  const mode = panelMode(status, ready);
+
+  // Redraw on change (~1 Hz) rather than a perpetual rAF loop: the spectrum is
+  // static between updates, unlike the scrolling sibling charts. The canvas is
+  // only mounted in `live` mode, so this bails until then.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+    const ctx = canvas.getContext("2d");
+    if (ctx === null) return;
+
+    let cssW = 0;
+    let cssH = 0;
+
+    const fit = (): void => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      cssW = rect.width;
+      cssH = rect.height;
+      canvas.width = Math.max(1, Math.round(cssW * dpr));
+      canvas.height = Math.max(1, Math.round(cssH * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const styles = getComputedStyle(document.documentElement);
+    const faint = styles.getPropertyValue("--fg-faint").trim() || "#4d5667";
+    const zoneColor = styles.getPropertyValue(`--zone-${zone}`).trim() || "#6b7ba8";
+
+    const xOf = (freqHz: number): number => (freqToX(freqHz) / 100) * cssW;
+
+    const draw = (): void => {
+      ctx.clearRect(0, 0, cssW, cssH);
+      if (spectrum.length === 0) return;
+
+      // Target band: where your peak should land, around the breathing pace.
+      const paceHz = pace / 60;
+      const halfHz = BAND_HALF_BPM / 60;
+      const bandX0 = xOf(paceHz - halfHz);
+      const bandX1 = xOf(paceHz + halfHz);
+      ctx.fillStyle = zoneColor + "14";
+      ctx.fillRect(bandX0, 0, Math.max(bandX1 - bandX0, 1), cssH);
+
+      // Bars
+      const maxPower = Math.max(...spectrum.map((b) => b.power), 1e-9);
+      const usableH = cssH - TOP_PAD;
+      const barW = (cssW / spectrum.length) * 0.7;
+
+      for (const bin of spectrum) {
+        const h = Math.max((bin.power / maxPower) * usableH, 1);
+        const cx = xOf(bin.freqHz);
+        const isPeak = Math.abs(bin.freqHz - peakFreqHz) <= BIN_HZ * 0.6;
+        ctx.fillStyle = isPeak ? zoneColor : faint;
+        ctx.globalAlpha = isPeak ? 0.95 : 0.3;
+        ctx.fillRect(cx - barW / 2, cssH - h, barW, h);
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    fit();
+    draw();
+
+    const ro = new ResizeObserver(() => {
+      fit();
+      draw();
+    });
+    ro.observe(canvas);
+
+    return () => {
+      ro.disconnect();
+    };
+  }, [spectrum, peakFreqHz, ready, zone, pace]);
+
+  if (mode !== "live") {
+    return (
+      <div role="img" aria-label="HRV power spectrum" className="h-44 w-full">
+        <PanelState mode={mode} progress={progress} />
+      </div>
+    );
+  }
+
+  const peakBpm = peakFreqHz > 0 ? (peakFreqHz * 60).toFixed(1) : null;
 
   return (
-    <div role="img" aria-label="HRV power spectrum" className="h-16 w-full">
-      <svg
-        viewBox={`0 0 100 ${TOTAL_H}`}
-        preserveAspectRatio="none"
-        className="h-full w-full"
-        aria-hidden="true"
-      >
-        {!ready ? (
-          <>
-            {[0.06, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35].map((f) => (
-              <rect
-                key={f}
-                x={freqToX(f) - barW / 2}
-                y={CHART_H - 3}
-                width={barW}
-                height={3}
-                fill="var(--fg-faint)"
-                opacity={0.2}
-              />
-            ))}
-            <text
-              x="50"
-              y={CHART_H / 2 + 2}
-              textAnchor="middle"
-              fontSize="5"
-              fill="var(--fg-faint)"
-            >
-              collecting…
-            </text>
-          </>
-        ) : (
-          spectrum.map((bin, i) => {
-            const h = maxPower > 0 ? (bin.power / maxPower) * CHART_H : 0;
-            const isPeak = Math.abs(bin.freqHz - peakFreqHz) <= BIN_HZ * 0.6;
-            const x = freqToX(bin.freqHz);
-            return (
-              <rect
-                key={i}
-                x={x - barW / 2}
-                y={CHART_H - Math.max(h, 0.5)}
-                width={barW}
-                height={Math.max(h, 0.5)}
-                fill={isPeak ? "var(--zone)" : "var(--fg-faint)"}
-                opacity={isPeak ? 0.9 : 0.3}
-              />
-            );
-          })
-        )}
-        {/* X-axis labels */}
-        <text x={freqToX(0.1)} y={TOTAL_H} textAnchor="middle" fontSize="4.5" fill="var(--fg-faint)">
-          0.1
-        </text>
-        <text x={freqToX(0.2)} y={TOTAL_H} textAnchor="middle" fontSize="4.5" fill="var(--fg-faint)">
-          0.2
-        </text>
-        <text x={freqToX(0.3)} y={TOTAL_H} textAnchor="middle" fontSize="4.5" fill="var(--fg-faint)">
-          0.3
-        </text>
-      </svg>
+    <div
+      role="img"
+      aria-label="HRV power spectrum, breaths per minute"
+      className="relative flex h-44 w-full flex-col"
+    >
+      {peakBpm !== null ? (
+        <span
+          className="absolute right-0 top-0 z-10 tnum text-[0.6rem] tracking-wide"
+          style={{ color: "var(--zone)" }}
+        >
+          peak {peakBpm} /min
+        </span>
+      ) : null}
+      <canvas ref={canvasRef} className="min-h-0 w-full flex-1" />
+      {/* HTML axis so the labels aren't subject to canvas scaling */}
+      <div className="relative h-4 w-full shrink-0">
+        {AXIS_BPM.map((b) => (
+          <span
+            key={b}
+            className="absolute -translate-x-1/2 text-[0.6rem] tabular-nums"
+            style={{ left: `${freqToX(b / 60)}%`, color: "var(--fg-faint)" }}
+          >
+            {b}
+          </span>
+        ))}
+        <span
+          className="absolute right-0 text-[0.55rem] uppercase tracking-[0.1em]"
+          style={{ color: "var(--fg-faint)" }}
+        >
+          br/min
+        </span>
+      </div>
       <span className="visually-hidden">
-        HRV power spectrum from 0.04 to 0.4 Hz. The bar at the peak frequency is highlighted.
+        HRV power spectrum across breathing rates from about 2 to 24 breaths per minute.
+        The bar at the peak frequency is highlighted, and the shaded band marks your
+        current breathing pace.
       </span>
     </div>
   );

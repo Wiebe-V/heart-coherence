@@ -2,24 +2,28 @@
 
 import { useId } from "react";
 import { useTrainerStore } from "@/lib/store";
+import { useSettingsStore } from "@/lib/settingsStore";
 import { useSession } from "@/hooks/useSession";
-import { loadSettings, saveSettings } from "@/lib/settings";
 import { PACE } from "@/lib/constants";
+import AchievementMeter from "@/components/AchievementMeter";
+import SessionSummary from "@/components/SessionSummary";
 
 /**
- * Pace slider (persisted to settings) and start/stop session button.
+ * Pace slider (persisted to settings), a live achievement meter while a session
+ * runs, the start/stop button, and the completion summary card.
  */
 export default function SessionControls() {
   const pace = useTrainerStore((s) => s.pace);
   const setPace = useTrainerStore((s) => s.setPace);
   const connected = useTrainerStore((s) => s.connection.status === "connected");
-  const { active, start, stop } = useSession();
+  const updateSettings = useSettingsStore((s) => s.update);
+  const { active, summary, start, stop, clearSummary } = useSession();
   const sliderId = useId();
 
   const onPaceChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const next = Number(e.target.value);
     setPace(next);
-    saveSettings({ ...loadSettings(), pace: next });
+    updateSettings({ pace: next });
   };
 
   return (
@@ -43,6 +47,8 @@ export default function SessionControls() {
         />
       </div>
 
+      {active ? <AchievementMeter /> : null}
+
       <div className="flex justify-center">
         {active ? (
           <button type="button" className="btn btn-ghost" onClick={() => void stop()}>
@@ -60,6 +66,18 @@ export default function SessionControls() {
           </button>
         )}
       </div>
+
+      {summary ? (
+        <SessionSummary
+          record={summary}
+          canRestart={connected}
+          onDone={clearSummary}
+          onRestart={() => {
+            clearSummary();
+            start();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

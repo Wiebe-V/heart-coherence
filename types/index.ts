@@ -90,6 +90,8 @@ export interface SessionRecord {
   coherenceTrace: number[];
   /** HR waveform decimated to ~1 point/s */
   hrTrace: number[];
+  /** zone-weighted points earned this session */
+  achievement: number;
 }
 
 export interface Settings {
@@ -99,4 +101,6 @@ export interface Settings {
   resonanceIntervalS: number;
   /** null = follow system prefers-reduced-motion */
   reducedMotionOverride: boolean | null;
+  /** zone-weighted points that complete a session */
+  achievementGoal: number;
 }

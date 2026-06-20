@@ -146,6 +146,10 @@ function SessionRow({ session, expanded, onToggle, onDelete }: SessionRowProps) 
               <dd className="tnum">{session.peakCoherence}</dd>
             </div>
             <div className="flex gap-1.5">
+              <dt className="text-fg-faint">achievement</dt>
+              <dd className="tnum">{session.achievement ?? 0}</dd>
+            </div>
+            <div className="flex gap-1.5">
               <dt className="text-fg-faint">duration</dt>
               <dd className="tnum">{formatDuration(session.durationS)}</dd>
             </div>

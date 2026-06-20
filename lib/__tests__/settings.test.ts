@@ -92,4 +92,30 @@ describe("mergeSettings", () => {
     const s = mergeSettings({ pace: 5.5 });
     expect(s.pace).toBe(5.5);
   });
+
+  it("valid achievementGoal is preserved", () => {
+    const s = mergeSettings({ achievementGoal: 500 });
+    expect(s.achievementGoal).toBe(500);
+  });
+
+  it("achievementGoal 0 falls back to default", () => {
+    const s = mergeSettings({ achievementGoal: 0 });
+    expect(s.achievementGoal).toBe(DEFAULT_SETTINGS.achievementGoal);
+  });
+
+  it("achievementGoal negative falls back to default", () => {
+    const s = mergeSettings({ achievementGoal: -100 });
+    expect(s.achievementGoal).toBe(DEFAULT_SETTINGS.achievementGoal);
+  });
+
+  it("achievementGoal NaN falls back to default", () => {
+    const s = mergeSettings({ achievementGoal: NaN });
+    expect(s.achievementGoal).toBe(DEFAULT_SETTINGS.achievementGoal);
+  });
+
+  it("achievementGoal non-number falls back to default", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const s = mergeSettings({ achievementGoal: "lots" as any });
+    expect(s.achievementGoal).toBe(DEFAULT_SETTINGS.achievementGoal);
+  });
 });

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ResonanceStep } from "@/types";
 import { useTrainerStore } from "@/lib/store";
 import { resonancePaces, bestPace, summarizeResonance } from "@/lib/resonance";
-import { loadSettings, saveSettings } from "@/lib/settings";
+import { loadSettings } from "@/lib/settings";
+import { useSettingsStore } from "@/lib/settingsStore";
 import { RESONANCE_INTERVAL_S, RESONANCE_SETTLE_S } from "@/lib/constants";
 
 const TICK_MS = 1000; // 1 Hz sampling loop
@@ -127,7 +128,7 @@ export default function ResonanceFinder() {
   const applyBest = useCallback(
     (best: number): void => {
       setPace(best);
-      saveSettings({ ...loadSettings(), pace: best });
+      useSettingsStore.getState().update({ pace: best });
     },
     [setPace],
   );

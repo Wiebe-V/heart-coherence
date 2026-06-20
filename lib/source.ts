@@ -2,6 +2,7 @@ import type { ConnectionState } from "@/types";
 import { pushRR } from "@/lib/beatBuffer";
 import { parseHeartRate } from "@/lib/ble";
 import { HR_SERVICE, HR_MEASUREMENT } from "@/lib/constants";
+import { pushDebugPacket } from "@/lib/bleDebug";
 
 export interface SourceCallbacks {
   onHr?: (hr: number) => void;
@@ -21,6 +22,14 @@ export class BleHeartRateSource {
     const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
     if (!value) return;
     const packet = parseHeartRate(value);
+    const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+    pushDebugPacket({
+      ts: performance.now(),
+      hex: Array.from(bytes).map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" "),
+      hr: packet.hr,
+      hasRR: packet.hasRR,
+      rr: packet.rr,
+    });
     this.callbacks.onHr?.(packet.hr);
     if (packet.hasRR && packet.rr.length) {
       if (!this.sawRR) {

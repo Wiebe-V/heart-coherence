@@ -19,6 +19,16 @@ export const DEFAULT_ZONE_THRESHOLDS: ZoneThresholds = {
 
 export const PACE = { min: 4.5, max: 7, step: 0.5, default: 6 } as const;
 
+/** Zone-weighted points accrued per second of an active session. */
+export const ZONE_POINTS: Record<CoherenceZone, number> = {
+  scattered: 0,
+  building: 1,
+  coherent: 2,
+};
+
+/** Default achievement points needed to complete a session (~a solid 5-min session). */
+export const DEFAULT_ACHIEVEMENT_GOAL = 300;
+
 export const RESONANCE_INTERVAL_S = 120; // hold per pace
 export const RESONANCE_SETTLE_S = 20; // ignore first N s of each step when averaging
 
@@ -31,9 +41,13 @@ export const DEFAULT_SETTINGS: Settings = {
   zoneThresholds: DEFAULT_ZONE_THRESHOLDS,
   resonanceIntervalS: RESONANCE_INTERVAL_S,
   reducedMotionOverride: null,
+  achievementGoal: DEFAULT_ACHIEVEMENT_GOAL,
 };
 
 export const SETTINGS_KEY = "coherence.settings.v1";
+
+/** localStorage flag marking that the onboarding overlay has been seen. */
+export const ONBOARDED_KEY = "coherence.onboarded.v1";
 
 /** Maps a coherence zone to the CSS custom property holding its color. */
 export const ZONE_VAR: Record<CoherenceZone, string> = {

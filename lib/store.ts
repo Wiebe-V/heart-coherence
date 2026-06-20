@@ -25,12 +25,19 @@ interface TrainerState {
   pace: number;
   isPacing: boolean;
   zoneSeconds: Record<CoherenceZone, number>;
+  /** zone-weighted points accrued during the active session */
+  achievement: number;
+  /** whether a training session is currently recording */
+  sessionActive: boolean;
   setConnection: (connection: ConnectionState) => void;
   setHr: (hr: number | null) => void;
   setCoherence: (coherence: CoherenceResult) => void;
   setPace: (pace: number) => void;
   setPacing: (isPacing: boolean) => void;
   bumpZoneSecond: (zone: CoherenceZone) => void;
+  addAchievement: (pts: number) => void;
+  resetAchievement: () => void;
+  setSessionActive: (sessionActive: boolean) => void;
   resetSignal: () => void;
 }
 
@@ -41,6 +48,8 @@ const useTrainerStore = create<TrainerState>((set) => ({
   pace: PACE.default,
   isPacing: false,
   zoneSeconds: { ...INITIAL_ZONE_SECONDS },
+  achievement: 0,
+  sessionActive: false,
   setConnection: (connection) => set({ connection }),
   setHr: (hr) => set({ hr }),
   setCoherence: (coherence) => set({ coherence }),
@@ -50,6 +59,9 @@ const useTrainerStore = create<TrainerState>((set) => ({
     set((s) => ({
       zoneSeconds: { ...s.zoneSeconds, [zone]: s.zoneSeconds[zone] + 1 },
     })),
+  addAchievement: (pts) => set((s) => ({ achievement: s.achievement + pts })),
+  resetAchievement: () => set({ achievement: 0 }),
+  setSessionActive: (sessionActive) => set({ sessionActive }),
   resetSignal: () =>
     set({ hr: null, coherence: INITIAL_COHERENCE, zoneSeconds: { ...INITIAL_ZONE_SECONDS } }),
 }));

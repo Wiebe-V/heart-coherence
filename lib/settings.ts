@@ -46,7 +46,17 @@ export function mergeSettings(partial: Partial<Settings>): Settings {
     reducedMotionOverride = rmo;
   }
 
-  return { pace, zoneThresholds, resonanceIntervalS, reducedMotionOverride };
+  // achievementGoal
+  let achievementGoal = DEFAULT_SETTINGS.achievementGoal;
+  if (
+    typeof partial.achievementGoal === "number" &&
+    isFinite(partial.achievementGoal) &&
+    partial.achievementGoal > 0
+  ) {
+    achievementGoal = partial.achievementGoal;
+  }
+
+  return { pace, zoneThresholds, resonanceIntervalS, reducedMotionOverride, achievementGoal };
 }
 
 /**

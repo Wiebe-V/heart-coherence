@@ -10,6 +10,8 @@ function resetStore() {
     pace: PACE.default,
     isPacing: false,
     zoneSeconds: INITIAL_ZONE_SECONDS,
+    achievement: 0,
+    sessionActive: false,
   });
 }
 
@@ -26,6 +28,8 @@ describe("useTrainerStore", () => {
     expect(s.pace).toBe(PACE.default);
     expect(s.isPacing).toBe(false);
     expect(s.zoneSeconds).toEqual({ scattered: 0, building: 0, coherent: 0 });
+    expect(s.achievement).toBe(0);
+    expect(s.sessionActive).toBe(false);
   });
 
   it("setConnection updates connection", () => {
@@ -68,6 +72,23 @@ describe("useTrainerStore", () => {
     expect(s.zoneSeconds.coherent).toBe(2);
     expect(s.zoneSeconds.building).toBe(1);
     expect(s.zoneSeconds.scattered).toBe(0);
+  });
+
+  it("addAchievement accumulates points", () => {
+    useTrainerStore.getState().addAchievement(2);
+    useTrainerStore.getState().addAchievement(1);
+    expect(useTrainerStore.getState().achievement).toBe(3);
+  });
+
+  it("resetAchievement zeroes achievement", () => {
+    useTrainerStore.getState().addAchievement(5);
+    useTrainerStore.getState().resetAchievement();
+    expect(useTrainerStore.getState().achievement).toBe(0);
+  });
+
+  it("setSessionActive updates sessionActive", () => {
+    useTrainerStore.getState().setSessionActive(true);
+    expect(useTrainerStore.getState().sessionActive).toBe(true);
   });
 
   it("resetSignal clears hr, coherence.ready, and zoneSeconds", () => {
