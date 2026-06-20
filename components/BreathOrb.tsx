@@ -3,6 +3,7 @@
 import { useRef, type CSSProperties } from "react";
 import type { CoherenceZone } from "@/types";
 import { useBreathPacer } from "@/hooks/useBreathPacer";
+import { ZONE_VAR } from "@/lib/constants";
 
 interface BreathOrbProps {
   pace: number;
@@ -10,12 +11,6 @@ interface BreathOrbProps {
   /** false → reduced motion: static ring, label still flips. */
   animate: boolean;
 }
-
-const ZONE_VAR: Record<CoherenceZone, string> = {
-  scattered: "var(--zone-scattered)",
-  building: "var(--zone-building)",
-  coherent: "var(--zone-coherent)",
-};
 
 /**
  * The hero. A large soft orb whose glow/fill follows the current coherence

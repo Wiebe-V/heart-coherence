@@ -1,4 +1,4 @@
-import type { Settings, ZoneThresholds } from "@/types";
+import type { CoherenceZone, Settings, ZoneThresholds } from "@/types";
 
 export const FS = 4; // Hz resample grid
 export const N = 256; // FFT length
@@ -32,3 +32,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const SETTINGS_KEY = "coherence.settings.v1";
+
+/** Maps a coherence zone to the CSS custom property holding its color. */
+export const ZONE_VAR: Record<CoherenceZone, string> = {
+  scattered: "var(--zone-scattered)",
+  building: "var(--zone-building)",
+  coherent: "var(--zone-coherent)",
+};

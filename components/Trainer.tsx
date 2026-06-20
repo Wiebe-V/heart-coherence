@@ -2,23 +2,18 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import type { CoherenceZone, Settings } from "@/types";
+import type { Settings } from "@/types";
 import { useTrainerStore } from "@/lib/store";
 import { useCoherence } from "@/hooks/useCoherence";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { loadSettings } from "@/lib/settings";
+import { ZONE_VAR } from "@/lib/constants";
 import ConnectionButton from "@/components/ConnectionButton";
 import BreathOrb from "@/components/BreathOrb";
 import CoherenceGauge from "@/components/CoherenceGauge";
 import ZoneBar from "@/components/ZoneBar";
 import LiveWaveform from "@/components/LiveWaveform";
 import SessionControls from "@/components/SessionControls";
-
-const ZONE_VAR: Record<CoherenceZone, string> = {
-  scattered: "var(--zone-scattered)",
-  building: "var(--zone-building)",
-  coherent: "var(--zone-coherent)",
-};
 
 /**
  * Client root. Composes the single-screen trainer: connection at the top, the

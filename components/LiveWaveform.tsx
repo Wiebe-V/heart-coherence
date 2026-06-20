@@ -70,7 +70,7 @@ export default function LiveWaveform() {
         ctx.stroke();
 
         ctx.fillStyle = faint;
-        ctx.font = "11px var(--font-geist-sans), sans-serif";
+        ctx.font = "11px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText("waiting for beats", cssW / 2, midY - 12);
