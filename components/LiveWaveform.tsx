@@ -2,17 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { getBeats, nowOnTimeline } from "@/lib/beatBuffer";
+import MetricPanel from "@/components/MetricPanel";
 
-const WINDOW_MS = 30_000; // last ~30 s of HR
-const PADDING = 6; // px breathing room top/bottom
+const WINDOW_MS = 30_000;
+const PADDING = 6;
 
-/**
- * A self-contained live heart-rate waveform. It owns a single requestAnimation-
- * Frame loop that reads the beat buffer DIRECTLY each frame and repaints — beats
- * never pass through React state, so this triggers zero re-renders. The canvas
- * is DPR-aware and refits via ResizeObserver. Empty buffer → flat baseline with
- * a faint "waiting for beats" hint.
- */
 export default function LiveWaveform() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -39,9 +33,6 @@ export default function LiveWaveform() {
     const ro = new ResizeObserver(fit);
     ro.observe(canvas);
 
-    // Resolve the muted accent + faint colors from CSS once per frame is fine,
-    // but reading getComputedStyle every frame is wasteful — cache and refresh
-    // lazily. The accent follows --fg-muted (quiet, not the zone color).
     const styles = getComputedStyle(document.documentElement);
     const accent = styles.getPropertyValue("--fg-muted").trim() || "#8b93a3";
     const faint = styles.getPropertyValue("--fg-faint").trim() || "#4d5667";
@@ -57,11 +48,9 @@ export default function LiveWaveform() {
       const now = nowOnTimeline();
       const t0 = now - WINDOW_MS;
 
-      // Window the beats to the last ~30 s.
       const windowed = beats.filter((b) => b.t >= t0);
 
       if (windowed.length < 2 || now === 0) {
-        // Empty / waiting state: a flat baseline + hint.
         ctx.strokeStyle = line;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -79,14 +68,12 @@ export default function LiveWaveform() {
         return;
       }
 
-      // Auto-scale HR to fit, with a little headroom so it never clips.
       let lo = Infinity;
       let hi = -Infinity;
       for (const b of windowed) {
         if (b.hr < lo) lo = b.hr;
         if (b.hr > hi) hi = b.hr;
       }
-      // Guard against a flat trace (lo === hi).
       const span = hi - lo;
       const pad = span < 1 ? 5 : span * 0.15;
       lo -= pad;
@@ -97,28 +84,54 @@ export default function LiveWaveform() {
       const xOf = (t: number): number => ((t - t0) / WINDOW_MS) * cssW;
       const yOf = (hr: number): number => PADDING + (1 - (hr - lo) / range) * usableH;
 
-      // Smooth scrolling line via quadratic midpoints between samples.
+      // Faint baseline grid
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(cssW, midY);
+      ctx.stroke();
+
+      // Gradient fill under the trace
+      const gradient = ctx.createLinearGradient(0, 0, 0, cssH);
+      gradient.addColorStop(0, accent + "30");
+      gradient.addColorStop(1, accent + "00");
+
+      const first = windowed[0]!;
+      const last = windowed[windowed.length - 1]!;
+
+      ctx.beginPath();
+      ctx.moveTo(xOf(first.t), yOf(first.hr));
+      for (let i = 1; i < windowed.length; i++) {
+        const prev = windowed[i - 1]!;
+        const cur = windowed[i]!;
+        const mx = (xOf(prev.t) + xOf(cur.t)) / 2;
+        const my = (yOf(prev.hr) + yOf(cur.hr)) / 2;
+        ctx.quadraticCurveTo(xOf(prev.t), yOf(prev.hr), mx, my);
+      }
+      ctx.lineTo(xOf(last.t), yOf(last.hr));
+      ctx.lineTo(xOf(last.t), cssH);
+      ctx.lineTo(xOf(first.t), cssH);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Trace line
       ctx.strokeStyle = accent;
       ctx.globalAlpha = 0.85;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       ctx.beginPath();
-
-      const first = windowed[0];
-      if (first !== undefined) {
-        ctx.moveTo(xOf(first.t), yOf(first.hr));
-        for (let i = 1; i < windowed.length; i += 1) {
-          const prev = windowed[i - 1];
-          const cur = windowed[i];
-          if (prev === undefined || cur === undefined) continue;
-          const mx = (xOf(prev.t) + xOf(cur.t)) / 2;
-          const my = (yOf(prev.hr) + yOf(cur.hr)) / 2;
-          ctx.quadraticCurveTo(xOf(prev.t), yOf(prev.hr), mx, my);
-        }
-        const last = windowed[windowed.length - 1];
-        if (last !== undefined) ctx.lineTo(xOf(last.t), yOf(last.hr));
+      ctx.moveTo(xOf(first.t), yOf(first.hr));
+      for (let i = 1; i < windowed.length; i++) {
+        const prev = windowed[i - 1]!;
+        const cur = windowed[i]!;
+        const mx = (xOf(prev.t) + xOf(cur.t)) / 2;
+        const my = (yOf(prev.hr) + yOf(cur.hr)) / 2;
+        ctx.quadraticCurveTo(xOf(prev.t), yOf(prev.hr), mx, my);
       }
+      ctx.lineTo(xOf(last.t), yOf(last.hr));
       ctx.stroke();
       ctx.globalAlpha = 1;
 
@@ -134,15 +147,13 @@ export default function LiveWaveform() {
   }, []);
 
   return (
-    <div
-      role="img"
-      aria-label="live heart-rate waveform"
-      className="h-16 w-full max-w-md sm:h-20"
-    >
-      <canvas ref={canvasRef} className="h-full w-full" />
-      <span className="visually-hidden">
-        A scrolling line showing your instantaneous heart rate over the last thirty seconds.
-      </span>
-    </div>
+    <MetricPanel title="heart rhythm">
+      <div role="img" aria-label="live heart-rate waveform" className="h-20">
+        <canvas ref={canvasRef} className="h-full w-full" />
+        <span className="visually-hidden">
+          A scrolling line showing your instantaneous heart rate over the last thirty seconds.
+        </span>
+      </div>
+    </MetricPanel>
   );
 }
