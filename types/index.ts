@@ -35,9 +35,12 @@ export interface ConnectionState {
   message?: string;
 }
 
-export type SourceMode = "ble" | "simulator";
-
 export type CoherenceZone = "scattered" | "building" | "coherent";
+
+export interface SpectrumBin {
+  freqHz: number;
+  power: number;
+}
 
 export interface CoherenceResult {
   /** full 64 s window available */
@@ -51,6 +54,8 @@ export interface CoherenceResult {
   /** peak frequency in Hz; 0 when not ready */
   peakFreqHz: number;
   zone: CoherenceZone;
+  /** HRV power bins within SPECTRUM_BAND; [] when not ready */
+  spectrum: SpectrumBin[];
 }
 
 export interface ZoneThresholds {

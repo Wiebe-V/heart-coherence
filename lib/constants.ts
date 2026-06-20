@@ -4,9 +4,11 @@ export const FS = 4; // Hz resample grid
 export const N = 256; // FFT length
 export const WINDOW_S = N / FS; // 64 s
 export const BEAT_BUFFER_S = 130; // prune beats older than this
+export const COHERENCE_HISTORY_S = 180; // prune coherence samples older than this (3 min)
 
 export const PEAK_BAND = { lo: 0.04, hi: 0.26 } as const; // peak search range
 export const TOTAL_BAND = { lo: 0.04, hi: 0.4 } as const; // total-power range
+export const SPECTRUM_BAND = { lo: 0.04, hi: 0.4 } as const; // display band for spectrum chart
 export const PEAK_HALF_WIDTH_HZ = 0.015; // ± around peak for peak power
 export const EMA_ALPHA = 0.2; // display = 0.8*prev + 0.2*new
 
