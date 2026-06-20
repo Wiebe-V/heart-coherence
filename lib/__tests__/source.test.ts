@@ -41,14 +41,21 @@ describe("SimulatedSource", () => {
 });
 
 describe("BleHeartRateSource", () => {
-  it("is a stub that throws on start", async () => {
+  it("has ble mode", () => {
     const src = new BleHeartRateSource();
     expect(src.mode).toBe("ble");
-    await expect(src.start()).rejects.toThrow();
   });
 
-  it("stop is a no-op and does not throw", () => {
+  it("rejects when navigator.bluetooth is unavailable (node has none)", async () => {
+    // node has no `navigator.bluetooth`, so start() must reject before any GATT work.
+    expect(typeof navigator === "undefined" || !navigator.bluetooth).toBe(true);
     const src = new BleHeartRateSource();
+    await expect(src.start()).rejects.toThrow(/Web Bluetooth is not available/);
+  });
+
+  it("stop is idempotent and does not throw", () => {
+    const src = new BleHeartRateSource();
+    expect(() => src.stop()).not.toThrow();
     expect(() => src.stop()).not.toThrow();
   });
 });
