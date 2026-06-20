@@ -138,8 +138,7 @@ export default function ResonanceFinder() {
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="text-sm text-fg-muted">find your resonant pace</p>
         <p className="max-w-xs text-xs text-fg-faint">
-          Connect a strap or start the simulator first, then we can sweep your breathing pace to
-          find where coherence is strongest.
+          Connect a strap, then we can sweep your breathing pace to find where coherence is strongest.
         </p>
         <button type="button" className="btn btn-ghost" disabled>
           find my resonance

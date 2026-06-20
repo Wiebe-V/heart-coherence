@@ -7,10 +7,7 @@ import { loadSettings, saveSettings } from "@/lib/settings";
 import { PACE } from "@/lib/constants";
 
 /**
- * The quiet control strip: a paced-breathing slider (persisted to settings) and
- * a minimal start/stop session button. The simulator affordance lives in
- * ConnectionButton, so it isn't duplicated here. Session recording UX beyond
- * start/stop (history, detail) is D7.
+ * Pace slider (persisted to settings) and start/stop session button.
  */
 export default function SessionControls() {
   const pace = useTrainerStore((s) => s.pace);
