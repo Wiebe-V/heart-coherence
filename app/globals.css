@@ -1,26 +1,302 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ *
+ * Coherence — theme tokens
+ * A calm, meditative dark interface. The breathing orb is the hero;
+ * everything else recedes toward the edges in muted cool greys.
+ * ------------------------------------------------------------------ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #06080c; /* deep near-black, cool */
+  --bg-elevated: #0c1018; /* faint lift for quiet panels */
+
+  /* Text */
+  --fg: #eef1f6; /* soft off-white primary */
+  --fg-muted: #8b93a3; /* muted grey secondary */
+  --fg-faint: #4d5667; /* barely-there tertiary / hints */
+
+  /* Hairlines */
+  --line: rgba(255, 255, 255, 0.06);
+  --line-strong: rgba(255, 255, 255, 0.12);
+
+  /* Focus */
+  --focus: #9db4d8;
+
+  /* Zone color system — calm, never alarming */
+  --zone-scattered: #6b7ba8; /* desaturated indigo / slate-blue */
+  --zone-building: #4ec5c1; /* soft teal / cyan */
+  --zone-coherent: #6fcf8e; /* serene warm green */
+
+  /* The live zone accent — Trainer sets this to one of the three above,
+     and every element that follows the current zone reads it. The
+     transition is what makes the color shift feel like dawn light. */
+  --zone: var(--zone-scattered);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-zone: var(--zone);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* A subtle radial gradient toward center, behind the orb, that drifts
+   toward the current zone color. Fixed so it never scrolls. */
+.app-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60% 55% at 50% 42%,
+      color-mix(in oklab, var(--zone) 14%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(120% 120% at 50% 50%, #0a0e16 0%, var(--bg) 60%);
+  transition: background 1200ms ease;
+}
+
+/* ------------------------------------------------------------------ *
+ * Breath orb
+ * ------------------------------------------------------------------ */
+
+.orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  /* Layered glow + fill, both following the current zone. The pacer hook
+     writes transform: scale(...) imperatively; we own everything else. */
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in oklab, var(--zone) 70%, #ffffff 12%) 0%,
+      color-mix(in oklab, var(--zone) 55%, transparent) 42%,
+      color-mix(in oklab, var(--zone) 22%, transparent) 70%,
+      transparent 78%
+    );
+  box-shadow:
+    0 0 60px 0 color-mix(in oklab, var(--zone) 45%, transparent),
+    0 0 140px 30px color-mix(in oklab, var(--zone) 22%, transparent),
+    inset 0 0 60px 0 color-mix(in oklab, var(--zone) 30%, transparent);
+  /* color/glow transitions smoothly between zones; transform is left to
+     the rAF loop so we do NOT transition it (would fight the pacer). */
+  transition:
+    background 900ms ease,
+    box-shadow 900ms ease;
+  will-change: transform;
+}
+
+/* A faint inner core that gives the orb depth. */
+.orb::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in oklab, var(--zone) 30%, #ffffff 22%) 0%,
+    transparent 65%
+  );
+  opacity: 0.65;
+  transition: background 900ms ease;
+}
+
+/* Reduced-motion: a static ring instead of a filled, scaling orb. */
+.orb-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid color-mix(in oklab, var(--zone) 70%, transparent);
+  box-shadow:
+    0 0 40px 0 color-mix(in oklab, var(--zone) 28%, transparent),
+    inset 0 0 40px 0 color-mix(in oklab, var(--zone) 14%, transparent);
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in oklab, var(--zone) 12%, transparent) 0%,
+    transparent 70%
+  );
+  transition:
+    background 900ms ease,
+    box-shadow 900ms ease,
+    border-color 900ms ease;
+}
+
+.orb-label {
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: color-mix(in oklab, var(--fg) 92%, var(--zone) 8%);
+  user-select: none;
+}
+
+/* ------------------------------------------------------------------ *
+ * Buttons — quiet, tactile
+ * ------------------------------------------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.6rem 1.15rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  background: color-mix(in oklab, var(--zone) 30%, transparent);
+  border-color: color-mix(in oklab, var(--zone) 55%, transparent);
+  color: var(--fg);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in oklab, var(--zone) 42%, transparent);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--fg-muted);
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--fg);
+  border-color: var(--fg-faint);
+}
+
+/* Visible focus ring on every interactive control. */
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Pace slider — themed range input
+ * ------------------------------------------------------------------ */
+
+.pace-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  cursor: pointer;
+}
+
+.pace-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--fg);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--zone) 30%, transparent);
+  transition: box-shadow 200ms ease;
+}
+
+.pace-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--fg);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--zone) 30%, transparent);
+}
+
+/* ------------------------------------------------------------------ *
+ * Tabular numerals so live readouts don't jitter width.
+ * ------------------------------------------------------------------ */
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Spinner
+ * ------------------------------------------------------------------ */
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--fg-muted);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Accessibility utility
+ * ------------------------------------------------------------------ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Honor the system preference for any CSS-driven motion. The orb's own
+   reduced-motion path is handled in React (it renders the static ring),
+   but the spinner and atmosphere drift should also calm down here. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1600ms;
+  }
+  .app-atmosphere,
+  .orb,
+  .orb::before,
+  .orb-ring {
+    transition-duration: 0ms;
+  }
 }
