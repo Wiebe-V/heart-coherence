@@ -83,7 +83,13 @@ export class BleHeartRateSource implements BeatSource {
     const packet = parseHeartRate(value);
     this.callbacks.onHr?.(packet.hr);
     if (packet.hasRR && packet.rr.length) {
-      this.sawRR = true;
+      // First RR ever: recover the connection state in case the grace timer
+      // already downgraded us to "no-rr" before this (slow-starting) strap began
+      // emitting beats. Idempotent if we're already "connected".
+      if (!this.sawRR) {
+        this.sawRR = true;
+        this.callbacks.onConnectionState?.({ status: "connected", deviceName: this.device?.name });
+      }
       pushRR(packet.rr, performance.now());
     }
   };

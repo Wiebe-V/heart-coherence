@@ -81,8 +81,14 @@ export function useHeartRateSensor(): {
     store.setMode("simulator");
     const src = new SimulatedSource(callbacks);
     sourceRef.current = src;
-    await src.start();
-    store.setConnection({ status: "connected", deviceName: "Simulator" });
+    try {
+      await src.start();
+      store.setConnection({ status: "connected", deviceName: "Simulator" });
+    } catch (err) {
+      sourceRef.current = null;
+      store.setMode(null);
+      store.setConnection({ status: "error", message: readableError(err) });
+    }
   }, [callbacks]);
 
   const disconnect = useCallback((): void => {
