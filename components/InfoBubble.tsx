@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 interface InfoBubbleProps {
   /** Popover heading; also drives the button's aria-label ("About {title}"). */
@@ -26,10 +26,32 @@ interface InfoBubbleProps {
  */
 export default function InfoBubble({ title, what, how, align = "start", side = "bottom" }: InfoBubbleProps) {
   const [open, setOpen] = useState(false);
+  const [shiftX, setShiftX] = useState(0);
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const headingId = useId();
+
+  // The popover anchors to the icon, so in tight spots (notably the settings
+  // drawer, pinned to the viewport's right edge) it can spill off-screen. After
+  // it opens, measure it and nudge it horizontally back into view. Layout effect
+  // so the correction happens before paint — no visible jump.
+  useLayoutEffect(() => {
+    if (!open) {
+      setShiftX(0);
+      return;
+    }
+    const el = panelRef.current;
+    if (!el) return;
+    const margin = 8;
+    const rect = el.getBoundingClientRect();
+    let dx = 0;
+    const overRight = rect.right - (window.innerWidth - margin);
+    if (overRight > 0) dx -= overRight;
+    if (rect.left + dx < margin) dx = margin - rect.left;
+    setShiftX(dx);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -37,19 +59,23 @@ export default function InfoBubble({ title, what, how, align = "start", side = "
     const onPointerDown = (e: PointerEvent): void => {
       if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    // Capture-phase so Escape closes only this bubble: if it reached a parent's
+    // keydown handler (e.g. the settings drawer's focus trap) the whole drawer
+    // would close too. stopPropagation keeps the dismissal scoped to the bubble.
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
         setOpen(false);
         buttonRef.current?.focus();
       }
     };
 
     document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
     };
   }, [open]);
 
@@ -85,9 +111,11 @@ export default function InfoBubble({ title, what, how, align = "start", side = "
 
       {open ? (
         <div
+          ref={panelRef}
           id={panelId}
           role="group"
           aria-labelledby={headingId}
+          style={shiftX ? { transform: `translateX(${shiftX}px)` } : undefined}
           className={`absolute z-30 w-60 ${horizontal} ${vertical} rounded-lg border border-(--line-strong) bg-(--bg-elevated) p-3 text-left shadow-lg`}
         >
           <p id={headingId} className="text-xs font-medium text-fg">
