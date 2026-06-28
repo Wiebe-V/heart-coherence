@@ -1,5 +1,8 @@
 import type { CoherenceZone, Settings, ZoneThresholds } from "@/types";
 
+/** Canonical public origin (used by the sitemap/robots metadata routes). */
+export const SITE_URL = "https://coherence.wiebevandevelde.be";
+
 export const FS = 4; // Hz resample grid
 export const N = 256; // FFT length
 export const WINDOW_S = N / FS; // 64 s
