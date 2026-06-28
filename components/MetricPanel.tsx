@@ -5,11 +5,13 @@ import type { ReactNode } from "react";
 interface MetricPanelProps {
   title: string;
   value?: ReactNode;
+  /** Optional control rendered immediately after the title (e.g. an InfoBubble). */
+  info?: ReactNode;
   children: ReactNode;
   className?: string;
 }
 
-export default function MetricPanel({ title, value, children, className = "" }: MetricPanelProps) {
+export default function MetricPanel({ title, value, info, children, className = "" }: MetricPanelProps) {
   return (
     <section
       aria-label={title}
@@ -17,7 +19,10 @@ export default function MetricPanel({ title, value, children, className = "" }: 
       style={{ background: "var(--bg-elevated)", borderColor: "var(--line)" }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[0.68rem] uppercase tracking-[0.18em] text-fg-faint">{title}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[0.68rem] uppercase tracking-[0.18em] text-fg-faint">{title}</span>
+          {info}
+        </div>
         {value !== undefined ? <div className="flex items-center">{value}</div> : null}
       </div>
       {children}

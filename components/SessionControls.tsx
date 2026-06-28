@@ -7,6 +7,8 @@ import { useSession } from "@/hooks/useSession";
 import { PACE } from "@/lib/constants";
 import AchievementMeter from "@/components/AchievementMeter";
 import SessionSummary from "@/components/SessionSummary";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 /**
  * Pace slider (persisted to settings), a live achievement meter while a session
@@ -30,9 +32,12 @@ export default function SessionControls() {
     <div className="flex w-full max-w-md flex-col gap-4">
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between">
-          <label htmlFor={sliderId} className="text-xs uppercase tracking-[0.18em] text-fg-muted">
-            pace
-          </label>
+          <span className="flex items-center gap-1.5">
+            <label htmlFor={sliderId} className="text-xs uppercase tracking-[0.18em] text-fg-muted">
+              pace
+            </label>
+            <InfoBubble {...INFO.pace} />
+          </span>
           <span className="tnum text-xs text-fg-muted">{pace} breaths/min</span>
         </div>
         <input

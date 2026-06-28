@@ -6,6 +6,8 @@ import type { SessionRecord } from "@/types";
 import { listSessions, deleteSession } from "@/lib/db";
 import { sessionToJSON, sessionToCSV, downloadText } from "@/lib/export";
 import Sparkline from "@/components/Sparkline";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 type Status = "loading" | "ready";
 
@@ -62,7 +64,10 @@ export default function SessionHistory() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-8">
         <header className="flex items-baseline justify-between">
-          <h1 className="text-sm uppercase tracking-[0.22em] text-fg-muted">sessions</h1>
+          <span className="flex items-center gap-1.5">
+            <h1 className="text-sm uppercase tracking-[0.22em] text-fg-muted">sessions</h1>
+            <InfoBubble {...INFO.sessions} />
+          </span>
           <Link
             href="/"
             className="text-xs text-fg-faint underline-offset-4 transition-colors hover:text-fg-muted focus-visible:text-fg-muted"

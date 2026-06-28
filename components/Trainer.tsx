@@ -18,6 +18,8 @@ import SessionControls from "@/components/SessionControls";
 import ResonanceFinder from "@/components/ResonanceFinder";
 import SettingsDrawer from "@/components/SettingsDrawer";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 export default function Trainer() {
   const settings = useSettingsStore((s) => s.settings);
@@ -92,25 +94,33 @@ export default function Trainer() {
 
           {/* Left ~48%: breath orb + controls */}
           <div className="flex flex-col items-center gap-6 md:w-[48%]">
-            <BreathOrb
-              size="min(46vmin, 28rem)"
-              pace={pace}
-              zone={zone}
-              animate={animate}
-            />
+            <div className="relative">
+              <BreathOrb
+                size="min(46vmin, 28rem)"
+                pace={pace}
+                zone={zone}
+                animate={animate}
+              />
+              <span className="absolute right-0 top-0">
+                <InfoBubble {...INFO.breathOrb} />
+              </span>
+            </div>
 
             <SessionControls />
 
             <div className="flex w-full max-w-xs flex-col items-center gap-4">
-              <button
-                type="button"
-                className="text-xs uppercase tracking-[0.18em] text-fg-faint underline-offset-4 transition-colors hover:text-fg-muted focus-visible:text-fg-muted"
-                aria-expanded={resonanceOpen}
-                aria-controls={resonanceId}
-                onClick={() => setResonanceOpen((open) => !open)}
-              >
-                {resonanceOpen ? "hide resonance finder" : "find my resonance"}
-              </button>
+              <span className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="text-xs uppercase tracking-[0.18em] text-fg-faint underline-offset-4 transition-colors hover:text-fg-muted focus-visible:text-fg-muted"
+                  aria-expanded={resonanceOpen}
+                  aria-controls={resonanceId}
+                  onClick={() => setResonanceOpen((open) => !open)}
+                >
+                  {resonanceOpen ? "hide resonance finder" : "find my resonance"}
+                </button>
+                <InfoBubble {...INFO.resonance} />
+              </span>
               {resonanceOpen ? (
                 <div id={resonanceId} className="flex w-full justify-center">
                   <ResonanceFinder />

@@ -3,6 +3,8 @@
 import { useId, type ReactNode } from "react";
 import { useSettingsStore } from "@/lib/settingsStore";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 interface SettingsDrawerProps {
   open: boolean;
@@ -14,12 +16,27 @@ interface SettingsDrawerProps {
 const inputClass =
   "w-full rounded-lg border border-(--line-strong) bg-transparent px-3 py-2 text-sm text-fg tnum focus-visible:border-(--focus)";
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  info,
+  children,
+}: {
+  label: string;
+  info?: ReactNode;
+  /** Receives the generated id so the control can be associated with the label. */
+  children: (id: string) => ReactNode;
+}) {
+  const id = useId();
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs uppercase tracking-[0.18em] text-fg-muted">{label}</span>
-      {children}
-    </label>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={id} className="text-xs uppercase tracking-[0.18em] text-fg-muted">
+          {label}
+        </label>
+        {info}
+      </div>
+      {children(id)}
+    </div>
   );
 }
 
@@ -75,80 +92,104 @@ export default function SettingsDrawer({ open, onClose, reduced }: SettingsDrawe
           </button>
         </div>
 
-        <Field label="achievement goal">
-          <input
-            type="number"
-            className={inputClass}
-            min={1}
-            step={10}
-            value={settings.achievementGoal}
-            onChange={(e) => update({ achievementGoal: Number(e.target.value) })}
-          />
+        <Field label="achievement goal" info={<InfoBubble {...INFO.achievementGoal} />}>
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              className={inputClass}
+              min={1}
+              step={10}
+              value={settings.achievementGoal}
+              onChange={(e) => update({ achievementGoal: Number(e.target.value) })}
+            />
+          )}
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="building at">
-            <input
-              type="number"
-              className={inputClass}
-              min={0}
-              max={100}
-              value={building}
-              onChange={(e) => update({ zoneThresholds: { building: Number(e.target.value), coherent } })}
-            />
-          </Field>
-          <Field label="coherent at">
-            <input
-              type="number"
-              className={inputClass}
-              min={0}
-              max={100}
-              value={coherent}
-              onChange={(e) => update({ zoneThresholds: { building, coherent: Number(e.target.value) } })}
-            />
-          </Field>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs uppercase tracking-[0.18em] text-fg-muted">zone thresholds</span>
+            <InfoBubble {...INFO.zoneThresholds} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="building at">
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  className={inputClass}
+                  min={0}
+                  max={100}
+                  value={building}
+                  onChange={(e) => update({ zoneThresholds: { building: Number(e.target.value), coherent } })}
+                />
+              )}
+            </Field>
+            <Field label="coherent at">
+              {(id) => (
+                <input
+                  id={id}
+                  type="number"
+                  className={inputClass}
+                  min={0}
+                  max={100}
+                  value={coherent}
+                  onChange={(e) => update({ zoneThresholds: { building, coherent: Number(e.target.value) } })}
+                />
+              )}
+            </Field>
+          </div>
+          <p className="text-[0.7rem] text-fg-faint">building must stay below coherent</p>
         </div>
-        <p className="-mt-3 text-[0.7rem] text-fg-faint">building must stay below coherent</p>
 
-        <Field label="resonance interval (s)">
-          <input
-            type="number"
-            className={inputClass}
-            min={1}
-            step={5}
-            value={settings.resonanceIntervalS}
-            onChange={(e) => update({ resonanceIntervalS: Number(e.target.value) })}
-          />
+        <Field label="resonance interval (s)" info={<InfoBubble {...INFO.resonanceInterval} />}>
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              className={inputClass}
+              min={1}
+              step={5}
+              value={settings.resonanceIntervalS}
+              onChange={(e) => update({ resonanceIntervalS: Number(e.target.value) })}
+            />
+          )}
         </Field>
 
-        <Field label="reduced motion">
-          <select
-            className={inputClass}
-            value={rmoValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              update({ reducedMotionOverride: v === "auto" ? null : v === "on" });
-            }}
-          >
-            <option value="auto">auto (system)</option>
-            <option value="on">on</option>
-            <option value="off">off</option>
-          </select>
+        <Field label="reduced motion" info={<InfoBubble {...INFO.reducedMotion} />}>
+          {(id) => (
+            <select
+              id={id}
+              className={inputClass}
+              value={rmoValue}
+              onChange={(e) => {
+                const v = e.target.value;
+                update({ reducedMotionOverride: v === "auto" ? null : v === "on" });
+              }}
+            >
+              <option value="auto">auto (system)</option>
+              <option value="on">on</option>
+              <option value="off">off</option>
+            </select>
+          )}
         </Field>
 
-        <Field label="theme">
-          <select
-            className={inputClass}
-            value={themeValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              update({ theme: v === "auto" ? null : (v as "light" | "dark") });
-            }}
-          >
-            <option value="auto">auto (system)</option>
-            <option value="light">light</option>
-            <option value="dark">dark</option>
-          </select>
+        <Field label="theme" info={<InfoBubble {...INFO.theme} />}>
+          {(id) => (
+            <select
+              id={id}
+              className={inputClass}
+              value={themeValue}
+              onChange={(e) => {
+                const v = e.target.value;
+                update({ theme: v === "auto" ? null : (v as "light" | "dark") });
+              }}
+            >
+              <option value="auto">auto (system)</option>
+              <option value="light">light</option>
+              <option value="dark">dark</option>
+            </select>
+          )}
         </Field>
       </div>
     </>

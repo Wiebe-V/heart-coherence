@@ -9,6 +9,8 @@ import { THEME_CHANGE_EVENT } from "@/lib/theme";
 import { DEFAULT_ZONE_THRESHOLDS, COHERENCE_HISTORY_S } from "@/lib/constants";
 import MetricPanel from "@/components/MetricPanel";
 import PanelState from "@/components/PanelState";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 const PADDING = 8;
 
@@ -185,6 +187,7 @@ export default function CoherenceGraph({ thresholds = DEFAULT_ZONE_THRESHOLDS }:
   return (
     <MetricPanel
       title="coherence over time"
+      info={<InfoBubble {...INFO.coherenceOverTime} />}
       value={scoreLabel !== null ? <span className="tnum text-sm text-zone">{scoreLabel}</span> : undefined}
     >
       <div role="img" aria-label="coherence score over time" className="relative h-24">

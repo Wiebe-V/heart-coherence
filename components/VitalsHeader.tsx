@@ -2,6 +2,8 @@
 
 import { useTrainerStore } from "@/lib/store";
 import ConnectionButton from "@/components/ConnectionButton";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 export default function VitalsHeader() {
   const coherence = useTrainerStore((s) => s.coherence);
@@ -42,6 +44,8 @@ export default function VitalsHeader() {
           <span className="text-base capitalize leading-none text-zone">{zone}</span>
           <span className="text-[0.65rem] uppercase tracking-[0.18em] text-fg-faint">zone</span>
         </div>
+
+        <InfoBubble {...INFO.vitals} align="end" />
       </div>
     </header>
   );

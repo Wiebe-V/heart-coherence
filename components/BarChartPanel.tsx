@@ -4,6 +4,8 @@ import { useState } from "react";
 import MetricPanel from "@/components/MetricPanel";
 import SpectrumChart from "@/components/SpectrumChart";
 import ZoneTimeChart from "@/components/ZoneTimeChart";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 type Tab = "spectrum" | "zone";
 
@@ -35,6 +37,7 @@ export default function BarChartPanel() {
   return (
     <MetricPanel
       title={tab === "spectrum" ? "hrv spectrum" : "time in zone"}
+      info={<InfoBubble {...(tab === "spectrum" ? INFO.spectrum : INFO.timeInZone)} side="top" />}
       value={toggle}
     >
       {tab === "spectrum" ? <SpectrumChart /> : <ZoneTimeChart />}

@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { useTrainerStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settingsStore";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 /**
  * Compact live readout of session progress — "achievement 128 / 300" over a
@@ -24,7 +26,10 @@ export default function AchievementMeter() {
   return (
     <div className="flex w-full max-w-md flex-col gap-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-xs uppercase tracking-[0.18em] text-fg-muted">achievement</span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-xs uppercase tracking-[0.18em] text-fg-muted">achievement</span>
+          <InfoBubble {...INFO.achievement} />
+        </span>
         <span className="tnum text-xs text-fg-muted">
           {achievement} / {goal}
         </span>

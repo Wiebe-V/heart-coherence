@@ -6,6 +6,8 @@ import { useTrainerStore } from "@/lib/store";
 import { THEME_CHANGE_EVENT } from "@/lib/theme";
 import MetricPanel from "@/components/MetricPanel";
 import PanelState from "@/components/PanelState";
+import InfoBubble from "@/components/InfoBubble";
+import { INFO } from "@/lib/infoText";
 
 const WINDOW_MS = 30_000;
 const PADDING = 6;
@@ -171,7 +173,7 @@ export default function LiveWaveform() {
   }, []);
 
   return (
-    <MetricPanel title="heart rhythm">
+    <MetricPanel title="heart rhythm" info={<InfoBubble {...INFO.heartRhythm} />}>
       <div role="img" aria-label="live heart-rate waveform" className="relative h-20">
         <canvas ref={canvasRef} className="h-full w-full" />
         {!connected ? (
