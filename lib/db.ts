@@ -30,6 +30,17 @@ export async function saveSession(s: SessionRecord): Promise<void> {
   await (await getDB()).put("sessions", s);
 }
 
+/**
+ * Write many sessions in one transaction. `put` keys on `id`, so importing a
+ * session that already exists overwrites it in place — re-importing the same
+ * backup is idempotent and merges rather than duplicates.
+ */
+export async function bulkPutSessions(sessions: SessionRecord[]): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction("sessions", "readwrite");
+  await Promise.all([...sessions.map((s) => tx.store.put(s)), tx.done]);
+}
+
 export async function listSessions(): Promise<SessionRecord[]> {
   const all = await (await getDB()).getAllFromIndex("sessions", "by-startedAt");
   return all.reverse(); // newest first

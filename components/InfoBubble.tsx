@@ -26,7 +26,6 @@ interface InfoBubbleProps {
  */
 export default function InfoBubble({ title, what, how, align = "start", side = "bottom" }: InfoBubbleProps) {
   const [open, setOpen] = useState(false);
-  const [shiftX, setShiftX] = useState(0);
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -34,23 +33,20 @@ export default function InfoBubble({ title, what, how, align = "start", side = "
   const headingId = useId();
 
   // The popover anchors to the icon, so in tight spots (notably the settings
-  // drawer, pinned to the viewport's right edge) it can spill off-screen. After
-  // it opens, measure it and nudge it horizontally back into view. Layout effect
-  // so the correction happens before paint — no visible jump.
+  // drawer, pinned to the viewport's right edge) it can spill off-screen. Once
+  // open, measure it and nudge it horizontally back into view, writing the
+  // transform straight to the node. Layout effect so it happens before paint —
+  // no visible jump.
   useLayoutEffect(() => {
-    if (!open) {
-      setShiftX(0);
-      return;
-    }
     const el = panelRef.current;
-    if (!el) return;
+    if (!open || !el) return;
     const margin = 8;
     const rect = el.getBoundingClientRect();
     let dx = 0;
     const overRight = rect.right - (window.innerWidth - margin);
     if (overRight > 0) dx -= overRight;
     if (rect.left + dx < margin) dx = margin - rect.left;
-    setShiftX(dx);
+    el.style.transform = dx ? `translateX(${dx}px)` : "";
   }, [open]);
 
   useEffect(() => {
@@ -115,7 +111,6 @@ export default function InfoBubble({ title, what, how, align = "start", side = "
           id={panelId}
           role="group"
           aria-labelledby={headingId}
-          style={shiftX ? { transform: `translateX(${shiftX}px)` } : undefined}
           className={`absolute z-30 w-60 ${horizontal} ${vertical} rounded-lg border border-(--line-strong) bg-(--bg-elevated) p-3 text-left shadow-lg`}
         >
           <p id={headingId} className="text-xs font-medium text-fg">

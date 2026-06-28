@@ -1,8 +1,11 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useSettingsStore } from "@/lib/settingsStore";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { listSessions, bulkPutSessions } from "@/lib/db";
+import { buildBackup, serializeBackup, parseBackup } from "@/lib/backup";
+import { downloadText } from "@/lib/export";
 import InfoBubble from "@/components/InfoBubble";
 import { INFO } from "@/lib/infoText";
 
@@ -36,6 +39,104 @@ function Field({
         {info}
       </div>
       {children(id)}
+    </div>
+  );
+}
+
+type BackupStatus = { kind: "idle" | "done" | "error"; message: string };
+
+/**
+ * Export-all / import controls for moving sessions + settings between devices.
+ * Export gathers every session from idb plus the live settings into one JSON
+ * file; import validates an uploaded file (lib/backup.parseBackup), merges its
+ * sessions by id, and replaces settings. All file work is client-only.
+ */
+function BackupSection() {
+  const settings = useSettingsStore((s) => s.settings);
+  const update = useSettingsStore((s) => s.update);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<BackupStatus>({ kind: "idle", message: "" });
+
+  async function onExport(): Promise<void> {
+    try {
+      const sessions = await listSessions();
+      const json = serializeBackup(buildBackup(settings, sessions, Date.now()));
+      const date = new Date().toISOString().slice(0, 10);
+      downloadText(`coherence-backup-${date}.json`, "application/json", json);
+      setStatus({ kind: "done", message: `exported ${sessions.length} sessions` });
+    } catch {
+      setStatus({ kind: "error", message: "export failed" });
+    }
+  }
+
+  async function onFileChange(e: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // let the same file be picked again later
+    if (!file) return;
+
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      setStatus({ kind: "error", message: "couldn't read that file" });
+      return;
+    }
+
+    const result = parseBackup(text);
+    if (!result.ok) {
+      setStatus({ kind: "error", message: result.error });
+      return;
+    }
+
+    try {
+      await bulkPutSessions(result.sessions);
+    } catch {
+      setStatus({ kind: "error", message: "couldn't save the imported sessions" });
+      return;
+    }
+    update(result.settings);
+
+    const skippedNote = result.skipped > 0 ? ` · ${result.skipped} skipped` : "";
+    setStatus({
+      kind: "done",
+      message: `imported ${result.sessions.length} sessions · settings replaced${skippedNote}`,
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-(--line) pt-6">
+      <span className="text-xs uppercase tracking-[0.18em] text-fg-muted">backup &amp; transfer</span>
+      <p className="text-[0.7rem] text-fg-faint">
+        export a file with every session and your settings, then import it on another device.
+        importing merges sessions and replaces settings.
+      </p>
+      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+        <button type="button" className="btn btn-ghost" onClick={() => void onExport()}>
+          export backup
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          import backup
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => void onFileChange(e)}
+        />
+      </div>
+      {status.kind !== "idle" ? (
+        <p
+          role="status"
+          className={`text-[0.7rem] ${status.kind === "error" ? "text-fg" : "text-fg-faint"}`}
+        >
+          {status.message}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -191,6 +292,8 @@ export default function SettingsDrawer({ open, onClose, reduced }: SettingsDrawe
             </select>
           )}
         </Field>
+
+        <BackupSection />
       </div>
     </>
   );
